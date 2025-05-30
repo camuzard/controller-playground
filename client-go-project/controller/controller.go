@@ -151,5 +151,23 @@ func (c *Controller) processItem(ctx context.Context, key string) error {
 		replicas = *deployment.Spec.Replicas
 	}
 	klog.Infof("Deployment: %s/%s, Replicas=%d", namespace, name, replicas)
+
+	// Ensure we run 2 replicas of the Deployment.
+	if replicas < 2 {
+		klog.Infof("Scaling replicas to 2 for %s/%s", namespace, name)
+
+		// Create a copy of the Deployment to avoid modifying the informer’s cached object, which could cause issues.
+		updatedDeployment := deployment.DeepCopy()
+		newReplicas := int32(2)
+		updatedDeployment.Spec.Replicas = &newReplicas
+		// Update the Deployment via the API server.
+		_, err = c.clientset.AppsV1().Deployments(namespace).Update(ctx, updatedDeployment, metav1.UpdateOptions{})
+		if err != nil {
+			klog.Errorf("Failed to update Deployment %s/%s: %v", namespace, name, err)
+			// If another process updates the Deployment concurrently, the work queue will retry, fetching the latest state.
+			return err
+		}
+	}
+
 	return nil
 }
