@@ -1,0 +1,4 @@
+crd-watcher
+bin/
+*.yaml
+vendor/
