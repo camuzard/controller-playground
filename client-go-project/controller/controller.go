@@ -91,13 +91,6 @@ func (c *Controller) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to sync informer cache")
 	}
 
-	// Loop unntil the queue is shut down.
-	go deploymentInformer.Run(ctx.Done())
-
-	if !cache.WaitForCacheSync(ctx.Done(), deploymentInformer.HasSynced) {
-		return fmt.Errorf("failed to sync informer cache")
-	}
-
 	// Calling processNextItem, which handles one key at a time.
 	for c.processNextItem(ctx) {
 	}
